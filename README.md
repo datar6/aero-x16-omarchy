@@ -1,109 +1,109 @@
-# GIGABYTE AERO X16 на Omarchy
+# GIGABYTE AERO X16 on Omarchy
 
-Шпаргалка и бэкап настроек ноутбука GIGABYTE AERO X16 4WH (BIOS FB04, Ryzen AI 9 465 + Radeon 890M, RTX 5070 Laptop) под Omarchy (Arch + Hyprland).
+Cheat sheet and config backup for a GIGABYTE AERO X16 4WH (BIOS FB04, Ryzen AI 9 465 + Radeon 890M, RTX 5070 Laptop) running Omarchy (Arch + Hyprland).
 
-## Быстрые команды
+## Quick commands
 
-### Питание и режимы прошивки
+### Power and firmware modes
 
-| Задача | Команда |
+| Task | Command |
 |---|---|
-| Текущий профиль | `powerprofilesctl get` |
-| Сменить профиль | `powerprofilesctl set performance` (`balanced`, `power-saver`) или панель батареи |
-| Что применила служба | `journalctl -u gb-power-sync -n 5` |
-| Перезапустить службу | `sudo systemctl restart gb-power-sync` |
-| Мощность RTX сейчас | `nvidia-smi --query-gpu=power.draw,clocks.gr,power.limit --format=csv` |
-| Почему RTX ограничена | `nvidia-smi -q -d PERFORMANCE` |
-| RTX застряла на ~11 Вт | `sudo systemctl restart nvidia-powerd` или переключить профиль туда-обратно |
+| Current profile | `powerprofilesctl get` |
+| Change profile | `powerprofilesctl set performance` (`balanced`, `power-saver`) or the battery panel |
+| What the service applied | `journalctl -u gb-power-sync -n 5` |
+| Restart the service | `sudo systemctl restart gb-power-sync` |
+| RTX power right now | `nvidia-smi --query-gpu=power.draw,clocks.gr,power.limit --format=csv` |
+| Why the RTX is throttled | `nvidia-smi -q -d PERFORMANCE` |
+| RTX stuck at ~11 W | `sudo systemctl restart nvidia-powerd`, or switch the profile away and back |
 
-Профиль → прошивка (делает `gb-power-sync` автоматически):
+Profile → firmware mapping (applied automatically by `gb-power-sync`):
 
-| Профиль | Режим (WMI 237) | Тихий режим `CRAF` (WMI 87) | Игровые вентиляторы `FANB` (WMI 113) |
+| Profile | Mode (WMI 237) | Quiet flag `CRAF` (WMI 87) | Gaming fans `FANB` (WMI 113) |
 |---|---|---|---|
-| power-saver | 0 (эко) | 1 (RTX до 30 Вт) | 0 |
+| power-saver | 0 (eco) | 1 (RTX capped at 30 W) | 0 |
 | balanced | 1 | 0 | 0 |
-| performance | 3 (игровой) | 0 | 1 |
+| performance | 3 (gaming) | 0 | 1 |
 
-### Порог зарядки батареи
+### Battery charge limit
 
-| Задача | Команда |
+| Task | Command |
 |---|---|
-| Показать порог и заряд | `gb-charge-limit` |
-| Заряжать до 80 % (по умолчанию) | `sudo gb-charge-limit 80` |
-| Любой порог 60–100 | `sudo gb-charge-limit 60` |
-| Заряжать до 100 % (перед поездкой) | `sudo gb-charge-limit off` |
+| Show limit and charge | `gb-charge-limit` |
+| Charge to 80% (default) | `sudo gb-charge-limit 80` |
+| Any limit from 60 to 100 | `sudo gb-charge-limit 60` |
+| Charge to 100% (before a trip) | `sudo gb-charge-limit off` |
 
-Порог хранится в `/etc/gb-charge-limit` и восстанавливается при загрузке.
+The limit is stored in `/etc/gb-charge-limit` and restored at boot.
 
-### Игры
+### Gaming
 
-Параметры запуска в Steam (Свойства → Параметры запуска), Proton Experimental:
+Steam launch options (Properties → Launch Options), Proton Experimental:
 
 ```
 prime-run gamemoderun mangohud %command%
 ```
 
-Для Deadlock в конце добавить ` -vulkan`.
+For Deadlock, append ` -vulkan`.
 
-| Задача | Как |
+| Task | How |
 |---|---|
-| Показать/скрыть MangoHud | `Ctrl_R + Shift_R + H` |
-| Вкл/выкл лимит 165 FPS | `Ctrl_R + Shift_R + L` |
-| Записать лог FPS | `Ctrl_R + Shift_R + R` → `~/Documents/mangohud-logs` |
-| Игра на RTX? | `nvidia-smi` — процесс игры должен быть в списке |
-| Температуры | `sensors`, `nvidia-smi` |
+| Show/hide MangoHud | `Ctrl_R + Shift_R + H` |
+| Toggle the 165 FPS cap | `Ctrl_R + Shift_R + L` |
+| Record an FPS log | `Ctrl_R + Shift_R + R` → `~/Documents/mangohud-logs` |
+| Is the game on the RTX? | `nvidia-smi`: the game process should be listed |
+| Temperatures | `sensors`, `nvidia-smi` |
 
-Перед игрой: родная зарядка (не USB-C 100 Вт) и профиль **performance**.
+Before playing: use the stock charger (not the 100 W USB-C one) and the **performance** profile.
 
-### Режим MUX (BIOS → Display Mode)
+### MUX mode (BIOS → Display Mode)
 
-| Режим | Экран | Нужен `prime-run` |
+| Mode | Panel | `prime-run` needed |
 |---|---|---|
-| Dynamic | AMD, `eDP-2`, RTX спит | да |
-| Discrete | NVIDIA, `eDP-1` | нет (не мешает) |
+| Dynamic | AMD, `eDP-2`, RTX sleeps | yes |
+| Discrete | NVIDIA, `eDP-1` | no (harmless) |
 
-Драйверы видео (VA-API), монитор 165 Гц и рендер панели подстраиваются автоматически (`display-gpu-env`).
+Video drivers (VA-API), the 165 Hz monitor setting and the shell render loop adapt automatically (`display-gpu-env`).
 
-### Мышь Razer DeathAdder V3
+### Razer DeathAdder V3 mouse
 
-| Задача | Команда |
+| Task | Command |
 |---|---|
-| GUI | Polychromatic (лаунчер) |
-| Частота опроса | `python3 -c "from openrazer.client import DeviceManager as D; d=D().devices[0]; d.poll_rate=2000"` |
-| Проверить DPI/опрос | `python3 -c "from openrazer.client import DeviceManager as D; d=D().devices[0]; print(d.dpi, d.poll_rate)"` |
+| GUI | Polychromatic (app launcher) |
+| Polling rate | `python3 -c "from openrazer.client import DeviceManager as D; d=D().devices[0]; d.poll_rate=2000"` |
+| Check DPI and polling rate | `python3 -c "from openrazer.client import DeviceManager as D; d=D().devices[0]; print(d.dpi, d.poll_rate)"` |
 
-Ускорение курсора выключено в `~/.config/hypr/input.lua` (`accel_profile = "flat"`).
+Pointer acceleration is off in `~/.config/hypr/input.lua` (`accel_profile = "flat"`).
 
-### Если что-то сломалось
+### Troubleshooting
 
-| Симптом | Что делать |
+| Symptom | Fix |
 |---|---|
-| Панель Omarchy зависла | `pkill -9 quickshell; hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")'` |
-| Перезапуск панели (обычный) | `omarchy restart shell` |
-| F-клавиши работают только с Fn | `Fn + Esc` (Fn Lock) |
-| Микрофон не слышно | `wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0` или клавиша mute микрофона |
-| Чёрное видео в Chrome | проверить `~/.local/bin/display-gpu-env`, перезайти в сессию |
-| Ошибки Hyprland | `hyprctl reload && hyprctl configerrors` |
+| Omarchy shell frozen | `pkill -9 quickshell; hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")'` |
+| Normal shell restart | `omarchy restart shell` |
+| F-keys only work with Fn | `Fn + Esc` (Fn Lock) |
+| Microphone silent | `wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0` or the mic mute key |
+| Black video in Chrome | check `~/.local/bin/display-gpu-env`, log out and back in |
+| Hyprland config errors | `hyprctl reload && hyprctl configerrors` |
 
-## Что в репозитории
+## Repository contents
 
-| Файл | Куда ставится | Что делает |
+| File | Installed to | Purpose |
 |---|---|---|
-| `bin/gb-power-sync` | `/usr/local/bin/` | Связывает профили Omarchy с режимами прошивки, перезапускает `nvidia-powerd` |
-| `systemd/gb-power-sync.service` | `/etc/systemd/system/` | Запуск службы при загрузке |
-| `systemd/acpi_call.conf` | `/etc/modules-load.d/` | Загрузка модуля `acpi_call` (пакет `acpi_call-dkms`) |
-| `bin/gb-charge-limit` | `/usr/local/bin/` | Порог зарядки (EC `BCPS`/`BCPC`) |
-| `polkit/50-gb-charge-limit.rules` | `/etc/polkit-1/rules.d/` | Необязательно: менять порог через `pkexec` без пароля |
-| `bin/display-gpu-env` | `~/.local/bin/` | Определяет GPU экрана и выдаёт переменные окружения |
-| `uwsm/env` | `~/.config/uwsm/env` | Подключает `display-gpu-env`, Zed на AMD |
-| `hypr/hyprland-gpu-env.lua` | конец `~/.config/hypr/hyprland.lua` | То же для Hyprland |
-| `hypr/monitors.lua` | `~/.config/hypr/` | 165 Гц для `eDP-1` и `eDP-2` |
-| `hypr/input-razer.lua` | конец `~/.config/hypr/input.lua` | Мышь без ускорения |
-| `mangohud/MangoHud.conf` | `~/.config/MangoHud/` | Оверлей и горячие клавиши |
-| `omarchy-plugin/datar6.power/` | `~/.config/omarchy/plugins/` | Необязательно: панель батареи с кнопками порога зарядки |
-| `gigabyte-bios-bug-report.txt` | — | Отчёт Gigabyte об ошибке `\_SB.PC00` в ACPI |
+| `bin/gb-power-sync` | `/usr/local/bin/` | Maps Omarchy power profiles to firmware modes, restarts `nvidia-powerd` |
+| `systemd/gb-power-sync.service` | `/etc/systemd/system/` | Starts the service at boot |
+| `systemd/acpi_call.conf` | `/etc/modules-load.d/` | Loads the `acpi_call` module (package `acpi_call-dkms`) |
+| `bin/gb-charge-limit` | `/usr/local/bin/` | Battery charge limit (EC `BCPS`/`BCPC`) |
+| `polkit/50-gb-charge-limit.rules` | `/etc/polkit-1/rules.d/` | Optional: change the limit via `pkexec` without a password |
+| `bin/display-gpu-env` | `~/.local/bin/` | Detects which GPU drives the panel and prints env vars |
+| `uwsm/env` | `~/.config/uwsm/env` | Loads `display-gpu-env`, pins Zed to the AMD GPU |
+| `hypr/hyprland-gpu-env.lua` | end of `~/.config/hypr/hyprland.lua` | Same for Hyprland |
+| `hypr/monitors.lua` | `~/.config/hypr/` | 165 Hz for both `eDP-1` and `eDP-2` |
+| `hypr/input-razer.lua` | end of `~/.config/hypr/input.lua` | Flat mouse acceleration |
+| `mangohud/MangoHud.conf` | `~/.config/MangoHud/` | Overlay layout and hotkeys |
+| `omarchy-plugin/datar6.power/` | `~/.config/omarchy/plugins/` | Optional: battery panel with charge-limit buttons |
+| `gigabyte-bios-bug-report.txt` | — | Report to Gigabyte about the `\_SB.PC00` ACPI bug |
 
-### Установка с нуля
+### Fresh install
 
 ```bash
 sudo pacman -S acpi_call-dkms gamemode mangohud openrazer-daemon
@@ -120,21 +120,21 @@ sudo gb-charge-limit 80
 
 install -m755 bin/display-gpu-env ~/.local/bin/
 cp mangohud/MangoHud.conf ~/.config/MangoHud/
-# hypr/*.lua и uwsm/env — вручную дописать в соответствующие файлы
+# Append hypr/*.lua and uwsm/env to the matching files by hand
 ```
 
-Панель с кнопками порога (вместо стандартной):
+Battery panel with charge-limit buttons (instead of the stock one):
 
 ```bash
 cp -r omarchy-plugin/datar6.power ~/.config/omarchy/plugins/
 sudo install -m644 polkit/50-gb-charge-limit.rules /etc/polkit-1/rules.d/
-# в ~/.config/omarchy/shell.json заменить "omarchy.power" на "datar6.power"
+# In ~/.config/omarchy/shell.json replace "omarchy.power" with "datar6.power"
 omarchy restart shell
 ```
 
-Вернуть стандартную: заменить обратно на `"omarchy.power"` и удалить папку плагина.
+To go back to the stock panel, switch the id back to `"omarchy.power"` and delete the plugin folder.
 
-### Удаление
+### Uninstall
 
 ```bash
 sudo systemctl disable --now gb-power-sync
@@ -143,25 +143,25 @@ sudo rm /usr/local/bin/gb-power-sync /usr/local/bin/gb-charge-limit \
   /etc/gb-charge-limit /etc/polkit-1/rules.d/50-gb-charge-limit.rules
 ```
 
-## Справка: методы прошивки
+## Reference: firmware methods
 
-Вызов через `acpi_call` (нужен root):
+Called through `acpi_call` (root required):
 
 ```bash
-# записать: метод <id>, значение <v> (байт в hex)
+# write: method <id>, value <v> (one hex byte)
 echo '\_SB.PCI0.AMW0.WMBD 0 0x<id> b<v>000000' | sudo tee /proc/acpi/call; sudo cat /proc/acpi/call
-# прочитать регистр EC
+# read an EC register
 echo '\_SB.PCI0.SBRG.EC0.CRAF' | sudo tee /proc/acpi/call; sudo cat /proc/acpi/call
 ```
 
-| WMI id | Регистр EC | Назначение |
+| WMI id | EC register | Purpose |
 |---|---|---|
-| 237 (`0xED`) | — | Режим питания 0–3 |
-| 87 (`0x57`) | `CRAF` | Тихий режим: 1 = RTX до 30 Вт |
-| 113 (`0x71`) | `FANB` | Игровые вентиляторы |
-| 100 (`0x64`) | `BCPS` | Режим зарядки: 0 обычный, 1 с порогом |
-| 101 (`0x65`) | `BCPC` | Порог зарядки, % |
+| 237 (`0xED`) | — | Power mode 0–3 |
+| 87 (`0x57`) | `CRAF` | Quiet flag: 1 = RTX capped at 30 W |
+| 113 (`0x71`) | `FANB` | Gaming fans |
+| 100 (`0x64`) | `BCPS` | Charge policy: 0 standard, 1 custom stop |
+| 101 (`0x65`) | `BCPC` | Charge stop threshold, % |
 
-Таблицу ACPI можно снять и прочитать так: `sudo cat /sys/firmware/acpi/tables/DSDT > DSDT && iasl -d DSDT` (пакет `acpica`), методы — в `Method (WMBD` и `Method (WMBC`.
+To dump and read the ACPI table: `sudo cat /sys/firmware/acpi/tables/DSDT > DSDT && iasl -d DSDT` (package `acpica`); the methods are in `Method (WMBD` and `Method (WMBC`.
 
-Известный баг BIOS FB04: SSDT NVIDIA ссылается на `\_SB.PC00.AMW0.LTGP` вместо `\_SB.PCI0…`, поэтому в `dmesg` при каждом пробуждении RTX — `AE_NOT_FOUND`. Безвредно.
+Known BIOS FB04 bug: the NVIDIA SSDT references `\_SB.PC00.AMW0.LTGP` instead of `\_SB.PCI0…`, so `dmesg` logs `AE_NOT_FOUND` every time the RTX wakes up. Harmless.
