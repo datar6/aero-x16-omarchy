@@ -1,0 +1,9 @@
+# Video drivers follow the MUX: AMD (radeonsi) in Dynamic mode, NVIDIA in
+# Discrete mode. Detection lives in ~/.local/bin/display-gpu-env.
+while IFS= read -r kv; do
+  [ -n "$kv" ] && export "$kv"
+done <<GPUENV
+$("$HOME/.local/bin/display-gpu-env")
+GPUENV
+
+# ZED_DEVICE_ID is set by display-gpu-env (AMD only in Dynamic mode).

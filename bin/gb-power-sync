@@ -1,0 +1,50 @@
+#!/bin/bash
+# gb-power-sync: tie GIGABYTE AERO X16 firmware power settings to the
+# power-profiles-daemon profile (Omarchy's power-saver/balanced/performance).
+#
+#   profile       WMI 237 (power mode)   WMI 87 CRAF (quiet, caps RTX at 30 W)   WMI 113 FANB (gaming fans)
+#   power-saver   0 (eco, CPU 45 W)      1                                       0
+#   balanced      1 (CPU 65-80 W)        0                                       0
+#   performance   3 (CPU 80 W)           0                                       1
+#
+# Calls go through acpi_call to \_SB.PCI0.AMW0.WMBD, the same firmware method
+# Gigabyte Control Center uses on Windows.
+set -u
+grep -q "AERO X16" /sys/class/dmi/id/product_name || { echo "not an AERO X16, exiting"; exit 0; }
+modprobe acpi_call || exit 1
+CALL=/proc/acpi/call
+
+# power-profiles-daemon starts late in boot; wait for it instead of ordering on it.
+for _ in $(seq 1 120); do powerprofilesctl get >/dev/null 2>&1 && break; sleep 1; done
+
+wmbd() { printf '\\_SB.PCI0.AMW0.WMBD 0 0x%x b%02x000000' "$1" "$2" > "$CALL"; tr -d '\0' < "$CALL"; }
+ec()   { printf '\\_SB.PCI0.SBRG.EC0.%s' "$1" > "$CALL"; tr -d '\0' < "$CALL"; }
+
+apply() {
+  local p mode quiet fan
+  p=$(powerprofilesctl get 2>/dev/null) || return
+  # D-Bus emits ActiveProfile* signals for unrelated changes (and for our own powerd restarts); act only on a real change.
+  [[ $p == "${last:-}" ]] && return
+  last=$p
+  case $p in
+    power-saver) mode=0; quiet=1; fan=0 ;;
+    balanced)    mode=1; quiet=0; fan=0 ;;
+    performance) mode=3; quiet=0; fan=1 ;;
+    *) return ;;
+  esac
+  wmbd 237 "$mode" >/dev/null
+  wmbd 87 "$quiet" >/dev/null
+  wmbd 113 "$fan" >/dev/null
+  echo "profile=$p -> power mode $mode, quiet $quiet, gaming fans $fan (CRAF=$(ec CRAF) FANB=$(ec FANB))"
+  # nvidia-powerd keeps a stale GPU power budget after firmware mode changes (RTX stuck at ~11 W / 180 MHz); restart it to re-read.
+  sleep 2; systemctl reset-failed nvidia-powerd.service 2>/dev/null; systemctl restart nvidia-powerd.service
+}
+
+# Restore the battery charge threshold (EC may lose it on a full power cut).
+[[ -x /usr/local/bin/gb-charge-limit ]] && /usr/local/bin/gb-charge-limit apply
+apply
+gdbus monitor --system --dest org.freedesktop.UPower.PowerProfiles \
+              --object-path /org/freedesktop/UPower/PowerProfiles |
+while IFS= read -r line; do
+  [[ $line == *ActiveProfile* ]] && apply
+done

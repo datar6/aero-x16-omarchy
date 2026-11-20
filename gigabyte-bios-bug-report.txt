@@ -1,0 +1,57 @@
+Subject: AERO X16 4WH, BIOS FB04: NVIDIA GPS _DSM fails because of a wrong ACPI path (\_SB.PC00 instead of \_SB.PCI0)
+
+Hello,
+
+I would like to report an ACPI bug in BIOS FB04 for the AERO X16 4WH. The NVIDIA
+"GPS" _DSM method references an object path that does not exist on this AMD
+platform, so the method fails every time the NVIDIA driver calls it.
+
+SYSTEM
+- Model: GIGABYTE AERO X16 4WH (product version -CF)
+- BIOS: FB04 (American Megatrends), dated 08/26/2026
+- CPU / iGPU: AMD Ryzen AI 9 465 / Radeon 890M
+- dGPU: NVIDIA GeForce RTX 5070 Laptop GPU (PCI 10DE:2D18)
+- Display mode (MUX): Dynamic
+- OS: Linux 7.2.15, NVIDIA open kernel module 615.78.08
+
+PROBLEM
+The NVIDIA SSDT (OEM ID "OptRf2", table ID "Opt2Tabl", OEM revision 0x1000)
+declares and reads this external object:
+
+    External (\_SB.PC00.AMW0.LTGP, ...)
+    ...
+    Store (\_SB.PC00.AMW0.LTGP, TGPU)     // in GPS, subfunction 0x2A
+
+On this machine there is no \_SB.PC00 device. The WMI device and the LTGP
+object live at \_SB.PCI0.AMW0 (the DSDT, OEM table ID "GBTUACPI", defines
+Name (LTGP, 0) under \_SB.PCI0.AMW0, and WMI method ID 75 in WMBD writes it).
+"PC00" looks like the root bridge name from an Intel platform and was probably
+carried over by mistake.
+
+As a result, \_SB.PCI0.GPP9.PEGP.GPS aborts with AE_NOT_FOUND. The NVIDIA driver
+cannot read the platform power-sharing parameters (GPS subfunction 0x2A,
+PSHAREPARAMS), and any TGP value written to LTGP never reaches the driver.
+
+LOG (repeats every time the dGPU resumes from runtime suspend)
+
+    ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PC00.AMW0.LTGP], AE_NOT_FOUND
+    ACPI Error: Aborting method \_SB.PCI0.GPP9.PEGP.GPS due to previous error (AE_NOT_FOUND)
+    ACPI Error: Aborting method \_SB.PCI0.GPP9.PEGP._DSM due to previous error (AE_NOT_FOUND)
+    NVRM: GPU0 osCallACPI_DSM: Error during 0x6 DSM subfunction 0x2a! status=0x59
+    NVRM: GPU0 pfmreqhndlrCallACPI: Unable to retrieve PFM_REQ_HNDLR_PSHAREPARAMS.
+
+The failing path is in the firmware tables, not in the operating system, so the
+same lookup most likely fails on Windows as well.
+
+STEPS TO REPRODUCE
+1. Boot with display mode set to Dynamic.
+2. Let the RTX 5070 enter runtime suspend, then start any 3D application.
+3. The errors above appear in the kernel log on every dGPU resume.
+
+SUGGESTED FIX
+In the NVIDIA SSDT, change both references from \_SB.PC00.AMW0.LTGP to
+\_SB.PCI0.AMW0.LTGP.
+
+I can provide the full ACPI table dump or test a beta BIOS if that helps.
+
+Thank you.

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Print video-driver env vars for whichever GPU drives the laptop panel.
+# The MUX (BIOS Display Mode) wires the internal panel to the AMD iGPU (Dynamic)
+# or to the NVIDIA dGPU (Discrete). VA-API/GLX must match the display GPU,
+# otherwise Chrome shows black video. Prints nothing if it cannot tell.
+shopt -s nullglob
+for c in /sys/class/drm/card*-eDP-*; do
+  [[ $(< "$c/status") == connected ]] || continue
+  card=${c##*/}; card=${card%%-*}
+  case $(< "/sys/class/drm/$card/device/vendor") in
+    0x1002) echo "LIBVA_DRIVER_NAME=radeonsi"; echo "__GLX_VENDOR_LIBRARY_NAME=mesa"
+                # Zed: render on the Radeon 890M so the RTX 5070 can sleep. Unset in
+                # Discrete mode: the panel is on NVIDIA there, AMD frames would not show.
+                echo "ZED_DEVICE_ID=0x150e"; exit 0 ;;
+    0x10de) echo "LIBVA_DRIVER_NAME=nvidia";   echo "__GLX_VENDOR_LIBRARY_NAME=nvidia"
+                # Qt Quick threaded renderer deadlocks on NVIDIA after suspend (omarchy-shell froze twice); render on the GUI thread.
+                echo "QSG_RENDER_LOOP=basic"; exit 0 ;;
+  esac
+done

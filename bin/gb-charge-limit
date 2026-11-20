@@ -1,0 +1,26 @@
+#!/bin/bash
+# Battery charge stop threshold for GIGABYTE AERO X16 (EC BCPS/BCPC via WMI 0x64/0x65).
+# Usage: gb-charge-limit [status | <60-100> | off | apply]   (changing it needs root)
+set -u
+CONF=/etc/gb-charge-limit
+C=/proc/acpi/call
+ec()   { printf '\\_SB.PCI0.SBRG.EC0.%s' "$1" >$C; tr -d '\0' <$C; }
+wmbd() { printf '\\_SB.PCI0.AMW0.WMBD 0 0x%x b%02x000000' "$1" "$2" >$C; tr -d '\0' <$C; }
+set_limit() {  # $1 = percent; 100 means standard charging
+  modprobe acpi_call || exit 1
+  if (( $1 >= 100 )); then wmbd 0x64 0 >/dev/null; wmbd 0x65 100 >/dev/null
+  else wmbd 0x65 "$1" >/dev/null; wmbd 0x64 1 >/dev/null; fi
+}
+show() {
+  if [[ -w $C ]]; then
+    printf 'policy=%d stop=%d%%  ' "$(ec BCPS)" "$(ec BCPC)"
+  fi
+  echo "configured=$(cat $CONF 2>/dev/null || echo 100)%  battery=$(cat /sys/class/power_supply/BAT1/capacity)% $(cat /sys/class/power_supply/BAT1/status)"
+}
+case ${1:-status} in
+  status) show ;;
+  apply)  set_limit "$(cat $CONF 2>/dev/null || echo 100)"; show ;;
+  off)    echo 100 >$CONF; set_limit 100; show ;;
+  *)      [[ $1 =~ ^[0-9]+$ ]] && (( $1 >= 60 && $1 <= 100 )) || { echo "limit must be 60-100" >&2; exit 1; }
+          echo "$1" >$CONF; set_limit "$1"; show ;;
+esac

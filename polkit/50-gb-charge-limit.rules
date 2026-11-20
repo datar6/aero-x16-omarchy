@@ -1,0 +1,8 @@
+// Let the active local user change the AERO X16 charge limit from the panel without a password.
+polkit.addRule(function(action, subject) {
+  if (action.id == "org.freedesktop.policykit.exec" &&
+      action.lookup("program") == "/usr/local/bin/gb-charge-limit" &&
+      subject.user == "datar6" && subject.local && subject.active) {
+    return polkit.Result.YES;
+  }
+});
