@@ -15,6 +15,7 @@ Cheat sheet and config backup for a GIGABYTE AERO X16 4WH (BIOS FB04, Ryzen AI 9
 | RTX power right now | `nvidia-smi --query-gpu=power.draw,clocks.gr,power.limit --format=csv` |
 | Why the RTX is throttled | `nvidia-smi -q -d PERFORMANCE` |
 | RTX stuck at ~11 W | `sudo systemctl restart nvidia-powerd`, or switch the profile away and back |
+| RTX stuck at 180 MHz after suspend | only a reboot helps (powerd restart and charger replug do not) |
 
 Profile → firmware mapping (applied automatically by `gb-power-sync`):
 
@@ -44,6 +45,16 @@ prime-run gamemoderun mangohud %command%
 ```
 
 For Deadlock, append ` -vulkan`.
+
+Until Dawn (newer DLSS 310.x instead of the bundled 3.7, Transformer upscaling model, in-game DLSS FG 2x):
+
+```
+PROTON_ENABLE_NGX_UPDATER=1 DXVK_NVAPI_DRS_SETTINGS=ngx_dlss_sr_override=on,ngx_dlss_sr_override_render_preset_selection=render_preset_latest prime-run gamemoderun mangohud %command%
+```
+
+Do not force multi frame generation (`ngx_dlss_fg_override=on,ngx_dlssg_multi_frame_count=2`): it causes a black screen after the intro. In-game: aspect ratio Free (the panel is 16:10), DLSS Quality, DLSS Frame Generation on.
+
+Check the DLSS version actually loaded: `strings -el ~/.local/share/Steam/steamapps/compatdata/<appid>/pfx/drive_c/ProgramData/NVIDIA/NGX/models/dlss/versions/*/files/*.bin | grep -A1 -x FileVersion`
 
 | Task | How |
 |---|---|
