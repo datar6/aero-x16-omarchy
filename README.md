@@ -16,6 +16,10 @@ Cheat sheet and config backup for a GIGABYTE AERO X16 4WH (BIOS FB04, Ryzen AI 9
 | Why the RTX is throttled | `nvidia-smi -q -d PERFORMANCE` |
 | RTX stuck at ~11 W | `sudo systemctl restart nvidia-powerd`, or switch the profile away and back |
 | RTX stuck at 180 MHz after suspend | only a reboot helps (powerd restart and charger replug do not) |
+| CPU max frequency right now | `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq` (5090000 outside power-saver, 2000000 in power-saver) |
+| CPU stuck at 2 GHz | `powerprofilesctl set balanced; powerprofilesctl set performance` (see below) |
+
+CPU 2 GHz cap: `omarchy-power-profiles-daemon` 0.30 caps every core at 2 GHz in power-saver and does not lift the cap when you leave it ([omacom/omarchy#19706](https://github.com/omacom/omarchy/issues/19706)). `gb-power-sync` restores the full frequency (up to 5.09 GHz) on every switch to balanced or performance.
 
 Profile → firmware mapping (applied automatically by `gb-power-sync`):
 
@@ -100,7 +104,7 @@ Pointer acceleration is off in `~/.config/hypr/input.lua` (`accel_profile = "fla
 
 | File | Installed to | Purpose |
 |---|---|---|
-| `bin/gb-power-sync` | `/usr/local/bin/` | Maps Omarchy power profiles to firmware modes, restarts `nvidia-powerd` |
+| `bin/gb-power-sync` | `/usr/local/bin/` | Maps Omarchy power profiles to firmware modes, restarts `nvidia-powerd`, lifts the 2 GHz CPU cap |
 | `systemd/gb-power-sync.service` | `/etc/systemd/system/` | Starts the service at boot |
 | `systemd/acpi_call.conf` | `/etc/modules-load.d/` | Loads the `acpi_call` module (package `acpi_call-dkms`) |
 | `bin/gb-charge-limit` | `/usr/local/bin/` | Battery charge limit (EC `BCPS`/`BCPC`) |
