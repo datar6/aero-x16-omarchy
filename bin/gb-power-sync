@@ -36,6 +36,11 @@ apply() {
   wmbd 87 "$quiet" >/dev/null
   wmbd 113 "$fan" >/dev/null
   echo "profile=$p -> power mode $mode, quiet $quiet, gaming fans $fan (CRAF=$(ec CRAF) FANB=$(ec FANB))"
+  # omarchy-power-profiles-daemon 0.30 caps every cpufreq policy at 2 GHz in power-saver
+  # and does not lift the cap when leaving it (amd_pstate); restore the hardware maximum.
+  if [[ $p != power-saver ]]; then
+    for c in /sys/devices/system/cpu/cpu*/cpufreq; do cat "$c/cpuinfo_max_freq" > "$c/scaling_max_freq"; done
+  fi
   # nvidia-powerd keeps a stale GPU power budget after firmware mode changes (RTX stuck at ~11 W / 180 MHz); restart it to re-read.
   sleep 2; systemctl reset-failed nvidia-powerd.service 2>/dev/null; systemctl restart nvidia-powerd.service
 }
