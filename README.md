@@ -69,6 +69,14 @@ Do not force multi frame generation (`ngx_dlss_fg_override=on,ngx_dlssg_multi_fr
 
 Check the DLSS version actually loaded: `strings -el ~/.local/share/Steam/steamapps/compatdata/<appid>/pfx/drive_c/ProgramData/NVIDIA/NGX/models/dlss/versions/*/files/*.bin | grep -A1 -x FileVersion`
 
+The Room 4: Old Sins (Unity 2019, D3D11). Through DXVK it hangs the RTX 5070 (`Xid 109 CTX SWITCH TIMEOUT`, `Xid 31 MMU Fault` in `journalctl -k`): the image freezes on the Fireproof logo while the music plays. Use WineD3D (OpenGL) instead:
+
+```
+PROTON_USE_WINED3D=1 gamemoderun mangohud %command% -screen-width 2560 -screen-height 1600
+```
+
+Unity arguments go after `%command%`; anything before it is run as a command. Rendering on the Radeon (`DXVK_FILTER_DEVICE_NAME="AMD Radeon 890M"`) gives a black screen in Discrete mode; it should work in Dynamic mode.
+
 | Task | How |
 |---|---|
 | Show/hide MangoHud | `Ctrl_R + Shift_R + H` |
