@@ -40,6 +40,15 @@ Profile → firmware mapping (applied automatically by `gb-power-sync`):
 
 The limit is stored in `/etc/gb-charge-limit` and restored at boot.
 
+Charging does not resume right below the limit. The EC has a hidden hysteresis (no register for it in the DSDT): at 75% with the limit at 80% the battery stays at 0 A on AC and the charging icon is not shown. This is expected; the laptop runs from the charger and the battery does not drain. To top up to the limit now:
+
+```bash
+sudo gb-charge-limit off   # starts charging immediately
+sudo gb-charge-limit 80    # once it is charging; the EC stops at 80%
+```
+
+Check the real state: `cat /sys/class/power_supply/BAT1/current_now` (0 = not charging; the reported status may still say `Charging`).
+
 ### Gaming
 
 Steam launch options (Properties → Launch Options), Proton Experimental:
