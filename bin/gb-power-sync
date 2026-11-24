@@ -39,6 +39,18 @@ apply() {
   # omarchy-power-profiles-daemon 0.30 caps every cpufreq policy at 2 GHz in power-saver
   # and does not lift the cap when leaving it (amd_pstate); restore the hardware maximum.
   if [[ $p != power-saver ]]; then
+    # Log the full cpufreq state when the cap actually stuck (boost on, max well below hardware max),
+    # for omacom/omarchy#19706. cpuinfo_max is a few kHz above the highest settable max, hence the margin.
+    local c stuck=0
+    for c in /sys/devices/system/cpu/cpufreq/policy*; do
+      [[ $(<"$c/boost") == 1 ]] && (( $(<"$c/scaling_max_freq") < $(<"$c/cpuinfo_max_freq") - 100000 )) && stuck=1
+    done
+    if (( stuck )); then
+      echo "CPU cap stuck after switching to $p (AC online: $(cat /sys/class/power_supply/AC*/online)); policy boost cpuinfo_max scaling_max scaling_min governor epp:"
+      for c in /sys/devices/system/cpu/cpufreq/policy*; do
+        echo "  ${c##*/} $(<"$c/boost") $(<"$c/cpuinfo_max_freq") $(<"$c/scaling_max_freq") $(<"$c/scaling_min_freq") $(<"$c/scaling_governor") $(<"$c/energy_performance_preference")"
+      done
+    fi
     for c in /sys/devices/system/cpu/cpu*/cpufreq; do cat "$c/cpuinfo_max_freq" > "$c/scaling_max_freq"; done
   fi
   # nvidia-powerd keeps a stale GPU power budget after firmware mode changes (RTX stuck at ~11 W / 180 MHz); restart it to re-read.
