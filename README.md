@@ -69,6 +69,8 @@ Do not force multi frame generation (`ngx_dlss_fg_override=on,ngx_dlssg_multi_fr
 
 Check the DLSS version actually loaded: `strings -el ~/.local/share/Steam/steamapps/compatdata/<appid>/pfx/drive_c/ProgramData/NVIDIA/NGX/models/dlss/versions/*/files/*.bin | grep -A1 -x FileVersion`
 
+Stray: under Proton Experimental it lags and then freezes for 120 s at the same spot (`GameThread timed out waiting for RenderThread`; no Xid in `journalctl -k`). Fix: Properties → Compatibility → **Proton 9.0-4**, with the standard launch options (`prime-run gamemoderun mangohud %command%`). Runs smoothly on max settings.
+
 The Room 4: Old Sins (Unity 2019, D3D11). Through DXVK it hangs the RTX 5070 (`Xid 109 CTX SWITCH TIMEOUT`, `Xid 31 MMU Fault` in `journalctl -k`): the image freezes on the Fireproof logo while the music plays. Use WineD3D (OpenGL) instead:
 
 ```
